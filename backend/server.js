@@ -12,52 +12,42 @@ app.use(json());
 let MONGO_URI =
   process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/produtos_DB";
 
-// /**
-//  * ALLOWED_ORIGINS: string com origens separadas por vírgula,
-//  * ex: "https://pitocos-toys.vercel.app,http://localhost:5173"
-//  * Configure essa variável no painel do Render (Environment).
-//  */
-// const raw = (process.env.ALLOWED_ORIGINS || "").trim();
-// const allowedOrigins = raw
-//   ? raw
-//       .split(",")
-//       .map((s) => s.trim())
-//       .filter(Boolean)
-//   : [];
+/* parse allowed origins from env (ex: "https://pitocos-toys.vercel.app,http://localhost:5173") */
+const raw = (process.env.ALLOWED_ORIGINS || "").trim();
+const allowedOrigins = raw
+  ? raw
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+  : [];
 
-// /**
-//  * CORS middleware seguro:
-//  * - permite requests sem origin (postman, curl) => cb(null,true)
-//  * - permite explicitamente as origens listadas
-//  * - se quiser permitir tudo temporariamente: set ALLOWED_ORIGINS="*"
-//  */
-// const corsOptions = {
-//   origin: function (origin, callback) {
-//     // origin === undefined -> requests server-to-server, Postman, curl
-//     if (!origin) return callback(null, true);
+/* cors options */
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true); // allow Postman/curl/no-origin
+    if (allowedOrigins.includes("*")) return callback(null, true); // dev-only
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error("Not allowed by CORS"));
+  },
+  methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "Accept"],
+  optionsSuccessStatus: 204
+};
 
-//     // if '*' present in ALLOWED_ORIGINS, allow all origins (use only em dev)
-//     if (allowedOrigins.includes("*")) return callback(null, true);
+/* Apply CORS middleware globally */
+app.use(cors(corsOptions));
 
-//     if (allowedOrigins.includes(origin)) {
-//       return callback(null, true);
-//     }
-
-//     // not allowed
-//     return callback(new Error("Not allowed by CORS"));
-//   },
-//   methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
-//   allowedHeaders: ["Content-Type", "Authorization", "Accept"],
-//   optionsSuccessStatus: 204
-// };
-
-// app.use(cors(corsOptions));
-
-// // IMPORTANT: allow preflight for all routes
-// app.options("*", cors(corsOptions));
-
-app.use(cors());
-app.options("*", cors());
+/* Handle preflight OPTIONS requests in a way that doesn't use app.options('*') */
+app.use((req, res, next) => {
+  if (req.method === "OPTIONS") {
+    // Let CORS middleware set appropriate headers, then end preflight
+    cors(corsOptions)(req, res, () => {
+      res.sendStatus(corsOptions.optionsSuccessStatus || 204);
+    });
+    return;
+  }
+  next();
+});
 
 try {
   const hasDB = /\/[a-zA-Z0-9_\-]+(\?|$)/.test(MONGO_URI);
