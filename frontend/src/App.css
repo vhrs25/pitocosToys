@@ -1,34 +1,72 @@
-/* mobile-first, centralizado e legível em telas pequenas */
+/* ==========================
+   PitocosToys - App.css
+   Mobile-first, claro/escuro
+   ========================== */
+
+/* cores base (modo claro por padrão) */
 :root {
-  --bg: #fafbfd;
-  --card: #fff;
-  --muted: #6b7280;
-  --primary: #2563eb;
-  --danger: #dc2626;
-  --border: #e6e9ef;
+  --bg: #f5f7fb; /* fundo da página */
+  --card: #ffffff; /* fundo dos cards/panels */
+  --text: #111827; /* texto principal */
+  --muted: #6b7280; /* texto secundário */
+  --primary: #2563eb; /* botão principal */
+  --danger: #dc2626; /* vermelho / destrutivo */
+  --border: #e6e9ef; /* bordas / inputs */
+  --input-bg: #ffffff; /* fundo inputs */
+  --shadow: rgba(2, 6, 23, 0.06);
+  --success: #16a34a;
+  --success-contrast: #065f46;
 }
 
+/* se o usuário prefere dark mode, sobrescreve variáveis */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b1220;
+    --card: #7a7a7a;
+    --text: #e6eef8;
+    --muted: #9aa7b8;
+    --primary: #3b82f6;
+    --danger: #ff3f3f;
+    --border: rgba(255, 255, 255, 0.06);
+    --input-bg: #5a5a5a;
+    --shadow: rgba(2, 6, 23, 0.6);
+    --success: #10b981;
+    --success-contrast: #bbf7d0;
+  }
+
+  /* tornar fundo do body bem escuro para dark mode */
+  body {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent);
+  }
+}
+
+/* reset / base */
 * {
   box-sizing: border-box;
 }
-body,
 html,
+body,
 #root {
   height: 100%;
   margin: 0;
   font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica,
     Arial;
+  color: var(--text);
+  background: var(--bg);
+}
+a {
+  color: inherit;
 }
 
+/* layout */
 .app {
-  background: var(--bg);
   min-height: 100vh;
   padding: 16px;
 }
 .container {
   max-width: 720px;
   margin: 0 auto;
-} /* centralizado */
+}
 .header {
   display: flex;
   flex-direction: column;
@@ -46,6 +84,7 @@ html,
   color: var(--muted);
 }
 
+/* busca / row */
 .searchRow {
   display: flex;
   gap: 8px;
@@ -56,18 +95,31 @@ html,
   padding: 8px;
   border-radius: 8px;
   border: 1px solid var(--border);
-  background: #fff;
+  background: var(--input-bg);
+  color: var(--text);
+  outline: none;
 }
+.searchRow input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+.searchRow input:focus {
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.12);
+  border-color: var(--primary);
+}
+
+/* botões */
 .btn {
   padding: 8px 10px;
   border-radius: 8px;
   border: 1px solid var(--border);
-  background: #fff;
+  background: var(--card);
+  color: var(--text);
   cursor: pointer;
 }
 .btn.small {
   padding: 6px 8px;
   font-size: 13px;
+  min-width: 36px;
 }
 .btn.primary {
   background: var(--primary);
@@ -79,7 +131,17 @@ html,
   color: #fff;
   border-color: transparent;
 }
+.btn.vendido {
+  background: var(--success);
+  color: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+.btn:focus {
+  outline: 2px solid rgba(37, 99, 235, 0.18);
+  outline-offset: 2px;
+}
 
+/* toggles */
 .toggles {
   display: flex;
   gap: 10px;
@@ -90,16 +152,18 @@ html,
   margin-right: 6px;
 }
 
+/* form section */
 .form-section {
   background: var(--card);
   padding: 12px;
   border-radius: 10px;
   border: 1px solid var(--border);
-  box-shadow: 0 2px 6px rgba(16, 24, 40, 0.03);
+  box-shadow: 0 2px 6px var(--shadow);
   margin-bottom: 12px;
 }
 .form-section h2 {
   margin: 0 0 8px 0;
+  color: var(--text);
 }
 .produto-form {
   display: grid;
@@ -110,7 +174,16 @@ html,
   padding: 8px;
   border-radius: 8px;
   border: 1px solid var(--border);
-  background: #fff;
+  background: var(--input-bg);
+  color: var(--text);
+  outline: none;
+}
+.produto-form input::placeholder {
+  color: rgba(255, 255, 255, 0.726);
+}
+.produto-form input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.08);
 }
 .checkboxRow {
   grid-column: 1 / -1;
@@ -127,6 +200,7 @@ html,
   margin-top: 8px;
 }
 
+/* lista / cards */
 .lista {
   margin-top: 8px;
 }
@@ -140,7 +214,8 @@ html,
   padding: 10px;
   border-radius: 10px;
   border: 1px solid var(--border);
-  box-shadow: 0 1px 3px rgba(2, 6, 23, 0.04);
+  box-shadow: 0 1px 3px var(--shadow);
+  color: var(--text);
 }
 .card.notAvailable {
   opacity: 0.85;
@@ -158,6 +233,7 @@ html,
 .cardTop h3 {
   margin: 0;
   font-size: 16px;
+  color: var(--text);
 }
 .cardTop .muted {
   font-size: 12px;
@@ -180,6 +256,7 @@ html,
   color: var(--muted);
 }
 
+/* pagination */
 .pagination {
   display: flex;
   gap: 8px;
@@ -189,12 +266,201 @@ html,
   color: var(--muted);
 }
 
-/* responsivo */
+/* dropdown menu */
+.cardMenu {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.dropdownMenu {
+  position: absolute;
+  right: 0;
+  top: 36px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(2, 6, 23, 0.09);
+  padding: 6px;
+  z-index: 60;
+  min-width: 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dropdownItem {
+  background: transparent;
+  border: none;
+  text-align: left;
+  padding: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text);
+}
+.dropdownItem:hover {
+  background: #f3f4f6;
+}
+
+/* lucro destaque */
+.lucro.positivo {
+  color: var(--success-contrast);
+  font-weight: 700;
+}
+.lucro.negativo {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+/* botão ... tamanho */
+.btn.small {
+  min-width: 36px;
+  padding: 6px 8px;
+}
+
+/* vendido button */
+.btn.vendido {
+  background: var(--success);
+  color: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.btn.vendido:hover {
+  filter: brightness(0.95);
+}
+
+/* card vendido */
+.card.sold {
+  background: #01a358b4;
+  border: 1px solid #bbf7d0;
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.06);
+}
+
+/* ajustes de tamanho de botões */
+.cardBody .btn {
+  min-width: 110px;
+}
+
+/* modal styles */
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 120;
+  padding: 16px;
+}
+.modal {
+  width: 100%;
+  max-width: 420px;
+  background: var(--card);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 10px 40px rgba(2, 6, 23, 0.2);
+  border: 1px solid var(--border);
+}
+.modal h3 {
+  margin-top: 0;
+  margin-bottom: 6px;
+  font-size: 18px;
+}
+.modal .muted {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.modal .label {
+  font-size: 13px;
+  margin-bottom: 6px;
+  display: block;
+}
+.modal input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  margin-bottom: 10px;
+  font-size: 16px;
+  background: #7c7c7c;
+  color: var(--text);
+}
+.modalError {
+  color: var(--danger);
+  background: #ff0011;
+  padding: 8px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+.modalActions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+/* sold icon animation */
+.cardActions {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.soldIcon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--success);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.6);
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.2);
+}
+.soldIcon svg {
+  stroke: white;
+}
+.soldIcon.animate {
+  animation: soldPop 1s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+@keyframes soldPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.6) rotate(-15deg);
+  }
+  20% {
+    opacity: 1;
+    transform: scale(1.15) rotate(0deg);
+  }
+  60% {
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* responsive tweaks */
 @media (min-width: 760px) {
   .cards {
     grid-template-columns: repeat(2, 1fr);
   }
   .produto-form {
     grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 520px) {
+  .modal {
+    padding: 12px;
+    max-width: 96%;
+  }
+  .modalActions {
+    flex-direction: column-reverse;
+  }
+  .modalActions .btn {
+    width: 100%;
   }
 }

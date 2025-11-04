@@ -8,13 +8,21 @@ import itemsRouter from "./routes/items.js";
 dotenv.config();
 const app = express();
 app.use(json());
-app.use(cors());
 
 let MONGO_URI =
   process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/produtos_DB";
 
-// Se a MONGODB_URI não apontar o nome do DB, forçamos para produtos_DB
-// (ex: mongodb://host:port -> mongodb://host:port/produtos_DB)
+const allowed = [process.env.ALLOWED_ORIGIN, "http://localhost:5173"];
+app.use(
+  cors({
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true);
+      if (allowed.includes(origin)) return cb(null, true);
+      return cb(new Error("Not allowed by CORS"));
+    }
+  })
+);
+
 try {
   const hasDB = /\/[a-zA-Z0-9_\-]+(\?|$)/.test(MONGO_URI);
   if (!hasDB) {

@@ -1,5 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import "./App.css";
+import ProductForm from "./components/ProductForm";
+import ProductCard from "./components/ProductCard";
+import SoldModal from "./components/SoldModal";
+import DeleteModal from "./components/DeleteModal";
 
 export default function App() {
   const [itens, setItens] = useState([]);
@@ -14,16 +18,56 @@ export default function App() {
     valorPago: "",
     valorVendido: "",
     descricao: "",
+    tags: "",
     ativo: true
   });
   const [loading, setLoading] = useState(false);
   const [editId, setEditId] = useState(null);
+  const [openMenuId, setOpenMenuId] = useState(null);
+  const [modalState, setModalState] = useState({
+    open: false,
+    item: null,
+    inputVal: "",
+    error: null
+  });
+  const [deleteModal, setDeleteModal] = useState({
+    open: false,
+    item: null,
+    error: null
+  });
+  const [animatingId, setAnimatingId] = useState(null);
+  const menuRef = useRef(null);
+  const inputRef = useRef(null);
   const API = import.meta.env.VITE_API_BASE_URL || "http://localhost:3003/api";
 
   useEffect(() => {
     carregarItens(page);
-    // eslint-disable-next-line
   }, [page, mostrarInativos]);
+
+  useEffect(() => {
+    function onDocClick(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target))
+        setOpenMenuId(null);
+    }
+    document.addEventListener("click", onDocClick);
+    return () => document.removeEventListener("click", onDocClick);
+  }, []);
+
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === "Escape") {
+        modalState.open && closeModal();
+        deleteModal.open && closeDeleteModal();
+      }
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [modalState.open, deleteModal.open]);
+
+  useEffect(() => {
+    if (modalState.open && inputRef.current)
+      setTimeout(() => inputRef.current.focus(), 80);
+  }, [modalState.open]);
 
   async function carregarItens(p = 1) {
     setLoading(true);
@@ -32,15 +76,13 @@ export default function App() {
       params.append("page", p);
       params.append("limit", limit);
       if (filtro) params.append("q", filtro);
-      // ativo: se mostrarInativos true -> buscar ambos? vamos buscar especificamente
       params.append("ativo", mostrarInativos ? "false" : "true");
-
       const res = await fetch(`${API}/items?${params.toString()}`);
       const data = await res.json();
       setItens(Array.isArray(data.items) ? data.items : []);
       setTotal(typeof data.total === "number" ? data.total : 0);
     } catch (err) {
-      console.error("Erro ao carregar itens:", err);
+      console.error(err);
       setItens([]);
       setTotal(0);
     } finally {
@@ -48,13 +90,28 @@ export default function App() {
     }
   }
 
-  async function handleBuscar(e) {
-    e && e.preventDefault();
+  function handleBuscar(e) {
+    e?.preventDefault();
     setPage(1);
     carregarItens(1);
   }
 
-  // criar novo ou salvar edição
+  function resetForm() {
+    setEditId(null);
+    setForm({
+      nome: "",
+      categoria: "",
+      valorPago: "",
+      valorVendido: "",
+      descricao: "",
+      tags: "",
+      ativo: true
+    });
+  }
+
+  // funções de CRUD (salvarItem, readicionar, toggleActive, abrirEdicao, openVendidoModal, openDeleteModal, confirmVendido, confirmDelete)
+  // (copiar exatamente do código original, mas usando resetForm() quando necessário)
+
   async function salvarItem(e) {
     e.preventDefault();
     const payload = {
@@ -63,6 +120,13 @@ export default function App() {
       valor_pago: Number(form.valorPago || 0),
       valor_vendido: form.valorVendido ? Number(form.valorVendido) : null,
       descricao: form.descricao,
+      tags:
+        typeof form.tags === "string"
+          ? form.tags
+              .split(",")
+              .map((t) => t.trim())
+              .filter(Boolean)
+          : form.tags || [],
       ativo: !!form.ativo,
       disponivel: !!form.ativo
     };
@@ -89,6 +153,7 @@ export default function App() {
         valorPago: "",
         valorVendido: "",
         descricao: "",
+        tags: "",
         ativo: true
       });
       carregarItens(1);
@@ -117,6 +182,7 @@ export default function App() {
       });
       if (!res.ok) throw new Error("Erro ao readicionar");
       carregarItens(page);
+      setOpenMenuId(null);
     } catch (err) {
       console.error(err);
       alert("Erro ao readicionar (veja console)");
@@ -130,26 +196,38 @@ export default function App() {
       });
       if (!res.ok) throw new Error("Erro ao alternar ativo");
       carregarItens(page);
+      setOpenMenuId(null);
     } catch (err) {
       console.error(err);
       alert("Erro ao alternar ativo (veja console)");
     }
   }
 
-  async function excluirHard(id) {
-    if (
-      !confirm(
-        "Excluir permanentemente este item? Esta ação NÃO pode ser desfeita."
-      )
-    )
-      return;
+  // abre modal de confirmação para hard delete
+  function openDeleteModal(item) {
+    setDeleteModal({ open: true, item, error: null });
+    setOpenMenuId(null);
+  }
+
+  function closeDeleteModal() {
+    setDeleteModal({ open: false, item: null, error: null });
+  }
+
+  // efetua exclusão hard (chamada real ao backend)
+  async function confirmDelete() {
+    const { item } = deleteModal;
+    if (!item) return closeDeleteModal();
     try {
-      const res = await fetch(`${API}/items/${id}`, { method: "DELETE" });
+      const res = await fetch(`${API}/items/${item._id}`, { method: "DELETE" });
       if (res.status !== 204 && !res.ok) throw new Error("Erro ao excluir");
+      closeDeleteModal();
       carregarItens(page);
     } catch (err) {
       console.error(err);
-      alert("Erro ao excluir (veja console)");
+      setDeleteModal((s) => ({
+        ...s,
+        error: "Erro ao excluir (veja console)"
+      }));
     }
   }
 
@@ -161,19 +239,76 @@ export default function App() {
       valorPago: item.valor_pago ?? "",
       valorVendido: item.valor_vendido ?? "",
       descricao: item.descricao ?? "",
+      tags: (item.tags || []).join(", "),
       ativo: !!item.ativo
     });
+    setOpenMenuId(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  // filtrar localmente se necessário
-  const lista = Array.isArray(itens) ? itens : [];
-  const itensFiltrados = lista.filter((p) => {
+  // Abre modal para marcar vendido
+  function openVendidoModal(item) {
+    const defaultVal =
+      item.valor_vendido !== null && item.valor_vendido !== undefined
+        ? String(item.valor_vendido)
+        : "";
+    setModalState({ open: true, item, inputVal: defaultVal, error: null });
+  }
+
+  function closeModal() {
+    setModalState({ open: false, item: null, inputVal: "", error: null });
+  }
+
+  // Confirmar venda do modal
+  async function confirmVendido() {
+    const { item, inputVal } = modalState;
+    if (!item) return closeModal();
+
+    const trimmed = (inputVal ?? "").toString().trim();
+    if (trimmed !== "" && isNaN(Number(trimmed))) {
+      setModalState((s) => ({
+        ...s,
+        error: "Informe um número válido ou deixe em branco."
+      }));
+      return;
+    }
+    const valor = trimmed === "" ? undefined : Number(trimmed);
+    const payload = {};
+    if (typeof valor !== "undefined") payload.valor_vendido = valor;
+    payload.data_venda = new Date().toISOString();
+
+    try {
+      const res = await fetch(`${API}/items/${item._id}/mark-sold`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error("Erro ao marcar vendido");
+      // animação do check
+      setAnimatingId(item._id);
+      setTimeout(() => setAnimatingId(null), 1100); // duração alinhada ao CSS
+      closeModal();
+      carregarItens(page);
+    } catch (err) {
+      console.error(err);
+      setModalState((s) => ({
+        ...s,
+        error: "Erro ao marcar vendido (veja console)"
+      }));
+    }
+  }
+
+  // filtrar itens
+  const itensFiltrados = (itens || []).filter((p) => {
     const f = filtro.trim().toLowerCase();
     if (!f) return true;
+    const tagMatch = (p.tags || []).some((tag) =>
+      tag.toLowerCase().includes(f)
+    );
     return (
       (p.nome || "").toLowerCase().includes(f) ||
-      (p.categoria || "").toLowerCase().includes(f)
+      (p.categoria || "").toLowerCase().includes(f) ||
+      tagMatch
     );
   });
 
@@ -189,7 +324,7 @@ export default function App() {
           <input
             value={filtro}
             onChange={(e) => setFiltro(e.target.value)}
-            placeholder="Buscar nome ou categoria..."
+            placeholder="Buscar nome, categoria ou tags..."
           />
           <button className="btn small" type="submit">
             Buscar
@@ -207,89 +342,13 @@ export default function App() {
           </label>
         </div>
 
-        <section className="form-section">
-          <h2>{editId ? "Editar produto" : "Adicionar produto"}</h2>
-          <form onSubmit={salvarItem} className="produto-form">
-            <input
-              value={form.nome}
-              onChange={(e) => setForm((s) => ({ ...s, nome: e.target.value }))}
-              placeholder="Nome"
-              required
-            />
-            <input
-              value={form.categoria}
-              onChange={(e) =>
-                setForm((s) => ({ ...s, categoria: e.target.value }))
-              }
-              placeholder="Categoria"
-              required
-            />
-            <input
-              value={form.valorPago}
-              onChange={(e) =>
-                setForm((s) => ({ ...s, valorPago: e.target.value }))
-              }
-              placeholder="Valor pago (R$)"
-              type="number"
-              step="0.01"
-              required
-            />
-            <input
-              value={form.valorVendido}
-              onChange={(e) =>
-                setForm((s) => ({ ...s, valorVendido: e.target.value }))
-              }
-              placeholder="Valor vendido (opcional)"
-              type="number"
-              step="0.01"
-            />
-            <input
-              value={form.descricao}
-              onChange={(e) =>
-                setForm((s) => ({ ...s, descricao: e.target.value }))
-              }
-              placeholder="Descrição (opcional)"
-            />
-            <label className="checkboxRow">
-              <input
-                type="checkbox"
-                checked={!form.ativo ? true : !form.ativo}
-                onChange={(e) =>
-                  setForm((s) => ({
-                    ...s,
-                    ativo: !e.target.checked ? true : false
-                  }))
-                }
-              />
-              Produto ainda não chegou (criar como INATIVO)
-            </label>
-
-            <div className="formActions">
-              <button className="btn primary" type="submit">
-                {editId ? "Salvar" : "Adicionar"}
-              </button>
-              {editId && (
-                <button
-                  type="button"
-                  className="btn"
-                  onClick={() => {
-                    setEditId(null);
-                    setForm({
-                      nome: "",
-                      categoria: "",
-                      valorPago: "",
-                      valorVendido: "",
-                      descricao: "",
-                      ativo: true
-                    });
-                  }}
-                >
-                  Cancelar
-                </button>
-              )}
-            </div>
-          </form>
-        </section>
+        <ProductForm
+          form={form}
+          setForm={setForm}
+          onSubmit={salvarItem}
+          editId={editId}
+          onCancel={resetForm}
+        />
 
         <section className="lista">
           <h2>Produtos {loading && "(carregando...)"}</h2>
@@ -298,62 +357,18 @@ export default function App() {
               <div className="empty">Nenhum produto encontrado</div>
             )}
             {itensFiltrados.map((item) => (
-              <article
+              <ProductCard
                 key={item._id}
-                className={`card ${item.disponivel ? "" : "notAvailable"} ${
-                  item.ativo ? "" : "inactive"
-                }`}
-              >
-                <div className="cardTop">
-                  <div>
-                    <h3>{item.nome}</h3>
-                    <div className="muted">{item.categoria}</div>
-                  </div>
-
-                  <div className="cardMenu">
-                    <button
-                      className="btn small"
-                      onClick={() => abrirEdicao(item)}
-                    >
-                      Editar
-                    </button>
-                    <button
-                      className="btn small"
-                      onClick={() => readicionar(item)}
-                    >
-                      Re-adicionar
-                    </button>
-                    <button
-                      className="btn small"
-                      onClick={() => toggleActive(item._id)}
-                    >
-                      {item.ativo ? "Desativar" : "Ativar"}
-                    </button>
-                    <button
-                      className="btn danger small"
-                      onClick={() => excluirHard(item._id)}
-                    >
-                      Excluir
-                    </button>
-                  </div>
-                </div>
-
-                <div className="cardBody">
-                  <div>
-                    <strong>Pago:</strong> R${" "}
-                    {Number(item.valor_pago ?? 0).toFixed(2)}
-                  </div>
-                  <div>
-                    <strong>Vendido:</strong>{" "}
-                    {item.valor_vendido
-                      ? `R$ ${Number(item.valor_vendido).toFixed(2)}`
-                      : "--"}
-                  </div>
-                  <div className="muted">
-                    Status: {item.disponivel ? "Disponível" : "Indisponível"}
-                  </div>
-                </div>
-              </article>
+                item={item}
+                animatingId={animatingId}
+                openMenuId={openMenuId}
+                setOpenMenuId={setOpenMenuId}
+                abrirEdicao={abrirEdicao}
+                readicionar={readicionar}
+                toggleActive={toggleActive}
+                openVendidoModal={openVendidoModal}
+                openDeleteModal={openDeleteModal}
+              />
             ))}
           </div>
 
@@ -372,6 +387,26 @@ export default function App() {
           </div>
         </section>
       </div>
+
+      <SoldModal
+        open={modalState.open}
+        onClose={closeModal}
+        onConfirm={confirmVendido}
+        item={modalState.item}
+        inputVal={modalState.inputVal}
+        setInputVal={(val) =>
+          setModalState((s) => ({ ...s, inputVal: val, error: null }))
+        }
+        error={modalState.error}
+      />
+
+      <DeleteModal
+        open={deleteModal.open}
+        onClose={closeDeleteModal}
+        onConfirm={confirmDelete}
+        item={deleteModal.item}
+        error={deleteModal.error}
+      />
     </div>
   );
 }
