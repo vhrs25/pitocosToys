@@ -11,7 +11,7 @@
   --muted: #6b7280; /* texto secundário */
   --primary: #2563eb; /* botão principal */
   --danger: #dc2626; /* vermelho / destrutivo */
-  --border: #e6e9ef; /* bordas / inputs */
+  --border: #5b7dc2; /* bordas / inputs */
   --input-bg: #ffffff; /* fundo inputs */
   --shadow: rgba(2, 6, 23, 0.06);
   --success: #16a34a;
@@ -100,7 +100,7 @@ a {
   outline: none;
 }
 .searchRow input::placeholder {
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(0, 0, 0, 0.6);
 }
 .searchRow input:focus {
   box-shadow: 0 2px 8px rgba(37, 99, 235, 0.12);
@@ -179,7 +179,7 @@ a {
   outline: none;
 }
 .produto-form input::placeholder {
-  color: rgba(255, 255, 255, 0.726);
+  color: rgba(5, 5, 5, 0.726);
 }
 .produto-form input:focus {
   border-color: var(--primary);
