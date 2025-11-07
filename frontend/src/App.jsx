@@ -1,3 +1,4 @@
+// src/App.jsx
 import { useState, useEffect, useRef } from "react";
 import "./App.css";
 import ProductForm from "./components/ProductForm";
@@ -17,6 +18,7 @@ export default function App() {
     categoria: "",
     valorPago: "",
     valorVendido: "",
+    valorPedido: "",
     descricao: "",
     tags: "",
     ativo: true
@@ -38,10 +40,13 @@ export default function App() {
   const [animatingId, setAnimatingId] = useState(null);
   const menuRef = useRef(null);
   const inputRef = useRef(null);
+  const searchDebounceRef = useRef(null);
   const API = import.meta.env.VITE_API_BASE_URL || "http://localhost:3003/api";
 
+  // carrega itens quando pagina ou filtro de inativos mudam
   useEffect(() => {
     carregarItens(page);
+    // eslint-disable-next-line
   }, [page, mostrarInativos]);
 
   useEffect(() => {
@@ -69,6 +74,7 @@ export default function App() {
       setTimeout(() => inputRef.current.focus(), 80);
   }, [modalState.open]);
 
+  // carregar itens do servidor (usa q para buscar no DB)
   async function carregarItens(p = 1) {
     setLoading(true);
     try {
@@ -76,11 +82,17 @@ export default function App() {
       params.append("page", p);
       params.append("limit", limit);
       if (filtro) params.append("q", filtro);
-      params.append("ativo", mostrarInativos ? "false" : "true");
+      // ativo: se mostrarInativos true -> buscar ambos (omitimos),
+      // se false -> enviar ativo=true para filtrar apenas ativos
+      if (mostrarInativos)
+        params.append("ativo", mostrarInativos ? "false" : "true");
+
       const res = await fetch(`${API}/items?${params.toString()}`);
       const data = await res.json();
+      // servidor deve retornar { items, total, page, limit }
       setItens(Array.isArray(data.items) ? data.items : []);
       setTotal(typeof data.total === "number" ? data.total : 0);
+      setPage(typeof data.page === "number" ? data.page : p);
     } catch (err) {
       console.error(err);
       setItens([]);
@@ -90,10 +102,23 @@ export default function App() {
     }
   }
 
+  // buscar: usa debounce no onChange para UX; botão Buscar força imediata
   function handleBuscar(e) {
     e?.preventDefault();
     setPage(1);
     carregarItens(1);
+  }
+
+  // debounce helper: chamar quando o campo de busca mudar
+  function onFiltroChange(v) {
+    setFiltro(v);
+    // limpa debounce anterior
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    // debounce de 700ms
+    searchDebounceRef.current = setTimeout(() => {
+      setPage(1);
+      carregarItens(1);
+    }, 700);
   }
 
   function resetForm() {
@@ -103,14 +128,16 @@ export default function App() {
       categoria: "",
       valorPago: "",
       valorVendido: "",
+      valorPedido: "",
       descricao: "",
       tags: "",
       ativo: true
     });
   }
 
-  // funções de CRUD (salvarItem, readicionar, toggleActive, abrirEdicao, openVendidoModal, openDeleteModal, confirmVendido, confirmDelete)
-  // (copiar exatamente do código original, mas usando resetForm() quando necessário)
+  /* ---------------------
+     Funções CRUD (mantive seu comportamento)
+     --------------------- */
 
   async function salvarItem(e) {
     e.preventDefault();
@@ -119,6 +146,7 @@ export default function App() {
       categoria: form.categoria,
       valor_pago: Number(form.valorPago || 0),
       valor_vendido: form.valorVendido ? Number(form.valorVendido) : null,
+      valor_pedido: form.valorPedido ? Number(form.valorPedido) : null,
       descricao: form.descricao,
       tags:
         typeof form.tags === "string"
@@ -147,15 +175,8 @@ export default function App() {
         });
         if (!res.ok) throw new Error("Erro ao criar");
       }
-      setForm({
-        nome: "",
-        categoria: "",
-        valorPago: "",
-        valorVendido: "",
-        descricao: "",
-        tags: "",
-        ativo: true
-      });
+      resetForm();
+      // recarrega página 1 pra refletir nova busca/inserção
       carregarItens(1);
     } catch (err) {
       console.error(err);
@@ -169,6 +190,7 @@ export default function App() {
       categoria: item.categoria,
       valor_pago: Number(item.valor_pago || 0),
       valor_vendido: null,
+      valor_pedido: item.valor_pedido ? Number(item.valor_pedido) : null,
       descricao: item.descricao,
       tags: item.tags || [],
       ativo: true,
@@ -238,6 +260,7 @@ export default function App() {
       categoria: item.categoria,
       valorPago: item.valor_pago ?? "",
       valorVendido: item.valor_vendido ?? "",
+      valorPedido: item.valor_pedido ?? "",
       descricao: item.descricao ?? "",
       tags: (item.tags || []).join(", "),
       ativo: !!item.ativo
@@ -254,7 +277,6 @@ export default function App() {
         : "";
     setModalState({ open: true, item, inputVal: defaultVal, error: null });
   }
-
   function closeModal() {
     setModalState({ open: false, item: null, inputVal: "", error: null });
   }
@@ -298,19 +320,8 @@ export default function App() {
     }
   }
 
-  // filtrar itens
-  const itensFiltrados = (itens || []).filter((p) => {
-    const f = filtro.trim().toLowerCase();
-    if (!f) return true;
-    const tagMatch = (p.tags || []).some((tag) =>
-      tag.toLowerCase().includes(f)
-    );
-    return (
-      (p.nome || "").toLowerCase().includes(f) ||
-      (p.categoria || "").toLowerCase().includes(f) ||
-      tagMatch
-    );
-  });
+  // ---- frontend: não filtrar localmente por busca; servidor já retorna os itens filtrados ----
+  const itensFiltrados = itens || [];
 
   return (
     <div className="app">
@@ -323,7 +334,7 @@ export default function App() {
         <form className="searchRow" onSubmit={handleBuscar}>
           <input
             value={filtro}
-            onChange={(e) => setFiltro(e.target.value)}
+            onChange={(e) => onFiltroChange(e.target.value)}
             placeholder="Buscar nome, categoria ou tags..."
           />
           <button className="btn small" type="submit">
@@ -336,7 +347,12 @@ export default function App() {
             <input
               type="checkbox"
               checked={mostrarInativos}
-              onChange={(e) => setMostrarInativos(e.target.checked)}
+              onChange={(e) => {
+                setMostrarInativos(e.target.checked);
+                // ao alternar, resetar página e recarregar a página 1
+                setPage(1);
+                carregarItens(1);
+              }}
             />
             Mostrar inativos
           </label>
@@ -351,9 +367,15 @@ export default function App() {
         />
 
         <section className="lista">
-          <h2>Produtos {loading && "(carregando...)"}</h2>
+          <h2>
+            Produtos {loading && "(carregando...)"}{" "}
+            <span className="muted" style={{ fontSize: 13, marginLeft: 8 }}>
+              {total ? `— ${total} encontrados` : ""}
+            </span>
+          </h2>
+
           <div className="cards">
-            {itensFiltrados.length === 0 && (
+            {itensFiltrados.length === 0 && !loading && (
               <div className="empty">Nenhum produto encontrado</div>
             )}
             {itensFiltrados.map((item) => (
@@ -375,13 +397,22 @@ export default function App() {
           <div className="pagination">
             <button
               className="btn"
-              onClick={() => setPage((s) => Math.max(1, s - 1))}
+              onClick={() => {
+                const prev = Math.max(1, page - 1);
+                setPage(prev);
+              }}
               disabled={page <= 1}
             >
               ◀ Anterior
             </button>
             <div className="muted">Página {page}</div>
-            <button className="btn" onClick={() => setPage((s) => s + 1)}>
+            <button
+              className="btn"
+              onClick={() => {
+                // next — apenas incrementa; a chamada de useEffect fetchará a próxima página
+                setPage((s) => s + 1);
+              }}
+            >
               Próxima ▶
             </button>
           </div>

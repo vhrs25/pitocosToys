@@ -10,13 +10,13 @@ export default function ProdutoForm({
       <h2>{editId ? "Editar produto" : "Adicionar produto"}</h2>
       <form onSubmit={onSubmit} className="produto-form">
         <input
-          value={form.nome}
+          value={form.nome ?? ""}
           onChange={(e) => setForm((s) => ({ ...s, nome: e.target.value }))}
           placeholder="Nome"
           required
         />
         <input
-          value={form.categoria}
+          value={form.categoria ?? ""}
           onChange={(e) =>
             setForm((s) => ({ ...s, categoria: e.target.value }))
           }
@@ -24,7 +24,7 @@ export default function ProdutoForm({
           required
         />
         <input
-          value={form.valorPago}
+          value={form.valorPago ?? ""}
           onChange={(e) =>
             setForm((s) => ({ ...s, valorPago: e.target.value }))
           }
@@ -34,7 +34,16 @@ export default function ProdutoForm({
           required
         />
         <input
-          value={form.valorVendido}
+          value={form.valorPedido ?? ""}
+          onChange={(e) =>
+            setForm((s) => ({ ...s, valorPedido: e.target.value }))
+          }
+          placeholder="Valor pedido (opcional)"
+          type="number"
+          step="0.01"
+        />
+        <input
+          value={form.valorVendido ?? ""}
           onChange={(e) =>
             setForm((s) => ({ ...s, valorVendido: e.target.value }))
           }
@@ -43,14 +52,14 @@ export default function ProdutoForm({
           step="0.01"
         />
         <input
-          value={form.descricao}
+          value={form.descricao ?? ""}
           onChange={(e) =>
             setForm((s) => ({ ...s, descricao: e.target.value }))
           }
           placeholder="Descrição (opcional)"
         />
         <input
-          value={form.tags}
+          value={form.tags ?? ""}
           onChange={(e) => setForm((s) => ({ ...s, tags: e.target.value }))}
           placeholder="Tags (separadas por vírgula)"
         />

@@ -4,7 +4,6 @@ import * as api from "../api/items";
 
 /**
  * useItems - hook que centraliza estado e lógica do app
- * Substitua o arquivo existente por este.
  */
 export default function useItems() {
   const [itens, setItens] = useState([]);
@@ -18,6 +17,7 @@ export default function useItems() {
     categoria: "",
     valorPago: "",
     valorVendido: "",
+    valorPedido: "",
     descricao: "",
     tags: "",
     ativo: true
@@ -81,6 +81,7 @@ export default function useItems() {
       categoria: form.categoria,
       valor_pago: Number(form.valorPago || 0),
       valor_vendido: form.valorVendido ? Number(form.valorVendido) : null,
+      valor_pedido: form.valorPedido ? Number(form.valorPedido) : null,
       descricao: form.descricao,
       tags:
         typeof form.tags === "string"
@@ -104,6 +105,7 @@ export default function useItems() {
         categoria: "",
         valorPago: "",
         valorVendido: "",
+        valorPedido: "",
         descricao: "",
         tags: "",
         ativo: true
@@ -122,6 +124,7 @@ export default function useItems() {
         categoria: item.categoria,
         valor_pago: Number(item.valor_pago || 0),
         valor_vendido: null,
+        valor_pedido: item.valor_pedido ? Number(item.valor_pedido) : null,
         descricao: item.descricao,
         tags: item.tags || [],
         ativo: true,
@@ -178,6 +181,7 @@ export default function useItems() {
       categoria: item.categoria,
       valorPago: item.valor_pago ?? "",
       valorVendido: item.valor_vendido ?? "",
+      valorPedido: item.valor_pedido ?? "",
       descricao: item.descricao ?? "",
       tags: (item.tags || []).join(", "),
       ativo: !!item.ativo

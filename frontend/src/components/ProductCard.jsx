@@ -16,6 +16,10 @@ export default function ProdutoCard({
     item.valor_vendido !== null && item.valor_vendido !== undefined
       ? Number(item.valor_vendido)
       : null;
+  const valorPedido =
+    item.valor_pedido !== null && item.valor_pedido !== undefined
+      ? Number(item.valor_pedido)
+      : null;
   const lucro = valorVendido !== null ? valorVendido - valorPago : null;
   const sold = valorVendido !== null || (!item.disponivel && item.ativo);
   const isAnimating = animatingId === item._id;
@@ -44,6 +48,10 @@ export default function ProdutoCard({
       <div className="cardBody">
         <div>
           <strong>Pago:</strong> R$ {valorPago.toFixed(2)}
+        </div>
+        <div>
+          <strong>Pedido:</strong> R${" "}
+          {valorPedido !== null ? valorPedido.toFixed(2) : "--"}
         </div>
         <div>
           <strong>Vendido:</strong>{" "}

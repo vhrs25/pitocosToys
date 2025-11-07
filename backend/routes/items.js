@@ -46,6 +46,53 @@ router.get("/", async (req, res) => {
   }
 });
 
+router.get("/items", async (req, res) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit, 10) || 50);
+    const q = (req.query.q || "").trim();
+    const ativo = req.query.ativo; // 'true' / 'false' ou undefined
+
+    const filter = {};
+
+    if (typeof ativo !== "undefined") {
+      // interpretar 'true' -> somente ativos; 'false' -> somente inativos
+      if (ativo === "true") filter.ativo = true;
+      else if (ativo === "false") filter.ativo = false;
+    }
+
+    if (q) {
+      // busca text (usa índice text)
+      filter.$text = { $search: q };
+    }
+
+    // contar total
+    const total = await Item.countDocuments(filter);
+
+    // projeção: se usar $text e quiser relevância ordene por score
+    let query = Item.find(filter)
+      .skip((page - 1) * limit)
+      .limit(limit);
+
+    if (q) {
+      // incluir score e ordenar por score desc
+      query = Item.find(filter, { score: { $meta: "textScore" } })
+        .sort({ score: { $meta: "textScore" } })
+        .skip((page - 1) * limit)
+        .limit(limit);
+    } else {
+      // ordem padrão (data cadastro desc)
+      query = query.sort({ data_cadastro: -1 });
+    }
+
+    const items = await query.lean();
+    return res.json({ items, total, page, limit });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Erro interno" });
+  }
+});
+
 // GET /api/items/:id
 router.get("/:id", async (req, res) => {
   try {

@@ -7,6 +7,7 @@ const itemSchema = new Schema(
     categoria: { type: String, required: true, trim: true, index: true },
     valor_pago: { type: Number, default: 0 },
     valor_vendido: { type: Number, default: null },
+    valor_pedido: { type: Number, default: null },
     disponivel: { type: Boolean, default: true, index: true },
     descricao: { type: String, default: "" },
     tags: { type: [String], default: [] },
@@ -21,7 +22,7 @@ const itemSchema = new Schema(
 
 // Texto simples em campos úteis para buscas
 itemSchema.index(
-  { nome: "text", descricao: "text", tags: "text" },
+  { nome: "text", categoria: "text", descricao: "text", tags: "text" },
   { default_language: "portuguese" }
 );
 
