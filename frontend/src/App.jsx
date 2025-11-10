@@ -40,7 +40,6 @@ export default function App() {
   const [animatingId, setAnimatingId] = useState(null);
   const menuRef = useRef(null);
   const inputRef = useRef(null);
-  const searchDebounceRef = useRef(null);
   const API = import.meta.env.VITE_API_BASE_URL || "http://localhost:3003/api";
 
   // carrega itens quando pagina ou filtro de inativos mudam
@@ -112,13 +111,6 @@ export default function App() {
   // debounce helper: chamar quando o campo de busca mudar
   function onFiltroChange(v) {
     setFiltro(v);
-    // limpa debounce anterior
-    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-    // debounce de 700ms
-    searchDebounceRef.current = setTimeout(() => {
-      setPage(1);
-      carregarItens(1);
-    }, 700);
   }
 
   function resetForm() {
